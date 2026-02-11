@@ -109,6 +109,23 @@ const EnumDropdownTestSchema = z.object({
   colorScheme: z.enum(["light", "dark", "auto", "high-contrast", "solarized-light", "solarized-dark", "monokai", "dracula"]).default("auto").describe("UI color scheme preference"),
 }).describe("Tool to test enum dropdown rendering in Inspector UI (https://github.com/modelcontextprotocol/inspector/issues/755, https://github.com/modelcontextprotocol/inspector/pull/823)");
 
+const PersonSchema = z.object({
+  firstName: z.string().describe("Person's first name"),
+  lastName: z.string().describe("Person's last name"),
+}).describe("A person object");
+
+const JSONRefTestSchema = z.object({
+  husband: PersonSchema,
+  wife: PersonSchema,
+}).describe("Tool to test JSON schema $ref support. Requires husband and wife Person objects.");
+
+const UserRoleSchema = z.enum(["customer", "admin", "moderator"]);
+
+const UserFilterSchema = z.object({
+  role: UserRoleSchema.nullable().describe("Filter by role"),
+  is_active: z.union([z.boolean(), z.null()]).describe("Filter by active status"),
+});
+
 const LongDescriptionTestSchema = z.object({
   message: z.string().describe("A simple message to echo back"),
 }).describe(`Tool to test long description rendering improvements (https://github.com/modelcontextprotocol/inspector/pull/823)
@@ -166,6 +183,8 @@ export enum ToolName {
   UNION_TYPE_TEST = "unionTypeTest",
   ENUM_DROPDOWN_TEST = "enumDropdownTest",
   LONG_DESCRIPTION_TEST = "longDescriptionTest",
+  JSON_REF_TEST = "jsonRefTest",
+  USER_FILTER_TEST = "userFilterTest",
 }
 
 // Helper functions
@@ -274,6 +293,21 @@ export function setupToolHandlers(server: Server) {
         name: ToolName.LONG_DESCRIPTION_TEST,
         description: LongDescriptionTestSchema.description,
         inputSchema: zodToJsonSchema(LongDescriptionTestSchema) as ToolInput,
+      },
+      {
+        name: ToolName.JSON_REF_TEST,
+        description: "Tests JSON schema $ref support with nested Person objects",
+        inputSchema: zodToJsonSchema(JSONRefTestSchema, {
+          definitions: { Person: PersonSchema },
+        }) as ToolInput,
+      },
+      {
+        name: ToolName.USER_FILTER_TEST,
+        description: "Tests JSON schema with $ref to $defs and nullable types",
+        inputSchema: zodToJsonSchema(UserFilterSchema, {
+          definitions: { UserRole: UserRoleSchema },
+          definitionPath: "$defs",
+        }) as ToolInput,
       },
     ];
 
@@ -503,6 +537,30 @@ export function setupToolHandlers(server: Server) {
           {
             type: "text",
             text: `✅ Long description rendering test completed!\n\nYour message: "${validatedArgs.message}"\n\nDid you notice the following improvements in the Inspector UI?\n\n✓ LIST VIEW (left pane):\n  • Tool description truncated after 3 lines with ellipsis\n  • Clean, scannable list without overwhelming detail\n\n✓ DETAIL VIEW (right pane):\n  • Description respects newlines and indentation (whitespace-pre-wrap)\n  • Scrollable if content exceeds max-height of 12rem (max-h-48)\n  • Horizontal rule separating description from inputs/outputs\n\nThese improvements from PR #823 make the Inspector more usable for tools with detailed documentation!`,
+          },
+        ],
+      };
+    }
+
+    if (name === ToolName.JSON_REF_TEST) {
+      const validatedArgs = JSONRefTestSchema.parse(args);
+      return {
+        content: [
+          {
+            type: "text",
+            text: `✅ JSON ref test completed!\n\nHusband: ${validatedArgs.husband.firstName} ${validatedArgs.husband.lastName}\nWife: ${validatedArgs.wife.firstName} ${validatedArgs.wife.lastName}\n\nThis tool tested if the input schema correctly uses $ref for the Person object.`,
+          },
+        ],
+      };
+    }
+
+    if (name === ToolName.USER_FILTER_TEST) {
+      const validatedArgs = UserFilterSchema.parse(args);
+      return {
+        content: [
+          {
+            type: "text",
+            text: `User Filter Test: role=${validatedArgs.role}, is_active=${validatedArgs.is_active}`,
           },
         ],
       };
