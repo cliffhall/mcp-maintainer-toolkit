@@ -1,6 +1,6 @@
 {
   "name": "mcp-maintainer-toolkit",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "MCP Server with utilities to help with maintaining MCP repos",
   "keywords": [
     "mcp",
@@ -43,7 +43,7 @@
     "start:streamableHttp": "node dist/streamableHttp.js"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.17.2",
+    "@modelcontextprotocol/sdk": "^1.24.0",
     "express": "^5.1.0",
     "zod": "^3.23.8",
     "zod-to-json-schema": "^3.24.6"
@@ -51,6 +51,6 @@
   "devDependencies": {
     "@types/express": "^5.0.3",
     "shx": "^0.4.0",
-    "typescript": "^5.9.2"
+    "typescript": "~5.7.3"
   }
 }
